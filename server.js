@@ -13,8 +13,23 @@ app.use(express.json());
 
 const typeDefs = gql`
 type Query{
-    greeting: String
-}`;
+    greeting: [String!]
+}
+
+type User{
+    id: ID!
+    name: String!
+    email: String!
+    task: [Task!]
+}
+
+type Task{
+    id: ID!
+    title: String!
+    completed: Boolean!
+    user: User!
+}
+`;
 
 const resolvers = {
     Query: {
