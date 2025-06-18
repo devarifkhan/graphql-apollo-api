@@ -2,8 +2,7 @@ const express = require('express');
 const { ApolloServer, gql } = require('apollo-server-express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { tasks, users } = require('./constants');
-
+const resolvers = require('./resolvers'); // Assuming resolvers are defined in a separate file
 
 dotenv.config();
 
@@ -47,51 +46,7 @@ type Task{
 }
 `;
 
-const resolvers = {
-    Query: {
-        greeting: () => "Hello from GraphQL!",
-        tasks: () => {
-            console.log(tasks);
-            return tasks;
-        },
-        task:(_, { id }) => {
-            console.log('Task ID:', id);
-            return tasks.find(task => task.id == id);
-        },
-        users: () => {
-            console.log(users);
-            return users;
-        },
-        user: (_, { id }) => {
-            console.log('User ID:', id);
-            return users.find(user => user.id == id);
-        }
-    },
 
-    Mutation:{
-        createTask: (_, { input }) => {
-            console.log('Creating task with input:', input);
-            const newTask = {
-                id: tasks.length + 1,
-                ...input
-            };
-            tasks.push(newTask);
-            return newTask;
-        }
-    },
-    Task: {
-        user: ({ userId }) => {
-            console.log('userId', userId)
-            return users.find(user => user.id == userId)
-        }
-    },
-    User: {
-        tasks: ({ id }) => {
-            console.log('User ID for tasks:', id);
-            return tasks.filter(task => task.userId == id);
-        }
-    }
-};
 
 const apolloServer = new ApolloServer({
     typeDefs,
