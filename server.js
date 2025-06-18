@@ -2,6 +2,7 @@ const express = require('express');
 const { ApolloServer, gql } = require('apollo-server-express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { tasks, users } = require('./constants');
 
 
 dotenv.config();
@@ -14,6 +15,7 @@ app.use(express.json());
 const typeDefs = gql`
 type Query{
     greeting: [String!]
+    tasks: [Task!]
 }
 
 type User{
@@ -25,7 +27,7 @@ type User{
 
 type Task{
     id: ID!
-    title: String!
+    name: String!
     completed: Boolean!
     user: User!
 }
@@ -33,7 +35,17 @@ type Task{
 
 const resolvers = {
     Query: {
-        greeting: () => "Hello from GraphQL!"
+        greeting: () => "Hello from GraphQL!",
+        tasks: () => {
+            console.log(tasks);
+            return tasks;
+        },
+    },
+    Task: {
+        user: ({ userId }) => {
+            console.log('userId', userId)
+            return users.find(user => user.id == userId)
+        }
     }
 };
 
