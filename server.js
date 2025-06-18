@@ -21,6 +21,17 @@ type Query{
     user(id: ID!): User
 }
 
+input CreateTaskInput {
+    name: String!
+    completed: Boolean!
+    userId: ID!
+}
+
+type Mutation {
+    createTask(input: CreateTaskInput!): Task
+    
+}
+
 type User{
     id: ID!
     name: String!
@@ -54,6 +65,18 @@ const resolvers = {
         user: (_, { id }) => {
             console.log('User ID:', id);
             return users.find(user => user.id == id);
+        }
+    },
+
+    Mutation:{
+        createTask: (_, { input }) => {
+            console.log('Creating task with input:', input);
+            const newTask = {
+                id: tasks.length + 1,
+                ...input
+            };
+            tasks.push(newTask);
+            return newTask;
         }
     },
     Task: {
