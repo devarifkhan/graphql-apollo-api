@@ -1,75 +1,62 @@
 const express = require('express');
-const { ApolloServer, gql } = require('apollo-server-express');
+const { ApolloServer } = require('apollo-server-express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const resolvers = require('./resolvers'); // Assuming resolvers are defined in a separate file
+const dotEnv = require('dotenv');
+const Dataloader = require('dataloader');
 
-dotenv.config();
+const resolvers = require('./resolvers');
+const typeDefs = require('./typeDefs');
+const { connection } = require('./database/util');
+const { verifyUser } = require('./helper/context');
+const loaders = require('./loaders');
+
+// set env variables
+dotEnv.config();
 
 const app = express();
 
+//db connectivity
+connection();
+
+//cors
 app.use(cors());
+
+// body parser middleware
 app.use(express.json());
 
-const typeDefs = gql`
-type Query{
-    greeting: [String!]
-    tasks: [Task!]
-    task(id: ID!): Task
-    users: [User!]
-    user(id: ID!): User
-}
-
-input CreateTaskInput {
-    name: String!
-    completed: Boolean!
-    userId: ID!
-}
-
-type Mutation {
-    createTask(input: CreateTaskInput!): Task
-    
-}
-
-type User{
-    id: ID!
-    name: String!
-    email: String!
-    tasks: [Task!]
-}
-
-type Task{
-    id: ID!
-    name: String!
-    completed: Boolean!
-    user: User!
-}
-`;
-
-
-
 const apolloServer = new ApolloServer({
-    typeDefs,
-    resolvers
+  typeDefs,
+  resolvers,
+  context: async ({ req, connection }) => {
+    const contextObj = {};
+    if (req) {
+      await verifyUser(req)
+      contextObj.email = req.email;
+      contextObj.loggedInUserId = req.loggedInUserId;
+    }
+    contextObj.loaders = {
+      user: new Dataloader(keys => loaders.user.batchUsers(keys))
+    };
+    return contextObj;
+  },
+  formatError: (error) => {
+    return {
+      message: error.message
+    };
+  }
 });
+
+apolloServer.applyMiddleware({ app, path: '/graphql' });
 
 const PORT = process.env.PORT || 3000;
 
-async function startServer() {
-    await apolloServer.start();
-    apolloServer.applyMiddleware({ app, path: '/graphql' });
+app.use('/', (req, res, next) => {
+  res.send({ message: 'Hello' });
+})
 
-    app.use("/", (req, res, next) => {
-        res.send("Hello World");
-    });
-
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-        console.log(`GraphQL endpoint: http://localhost:${PORT}${apolloServer.graphqlPath}`);
-    });
-}
-
-startServer().catch(error => {
-    console.error('Error starting server:', error);
+const httpServer = app.listen(PORT, () => {
+  console.log(`Server listening on PORT: ${PORT}`);
+  console.log(`Graphql Endpoint: ${apolloServer.graphqlPath}`);
 });
 
+apolloServer.installSubscriptionHandlers(httpServer);
