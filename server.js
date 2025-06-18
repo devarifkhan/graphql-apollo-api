@@ -17,13 +17,15 @@ type Query{
     greeting: [String!]
     tasks: [Task!]
     task(id: ID!): Task
+    users: [User!]
+    user(id: ID!): User
 }
 
 type User{
     id: ID!
     name: String!
     email: String!
-    task: [Task!]
+    tasks: [Task!]
 }
 
 type Task{
@@ -44,12 +46,26 @@ const resolvers = {
         task:(_, { id }) => {
             console.log('Task ID:', id);
             return tasks.find(task => task.id == id);
+        },
+        users: () => {
+            console.log(users);
+            return users;
+        },
+        user: (_, { id }) => {
+            console.log('User ID:', id);
+            return users.find(user => user.id == id);
         }
     },
     Task: {
         user: ({ userId }) => {
             console.log('userId', userId)
             return users.find(user => user.id == userId)
+        }
+    },
+    User: {
+        tasks: ({ id }) => {
+            console.log('User ID for tasks:', id);
+            return tasks.filter(task => task.userId == id);
         }
     }
 };
